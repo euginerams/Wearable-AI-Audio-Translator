@@ -1,4 +1,4 @@
-# Distributed Wearable AI Audio Translator
+# Wearable AI Audio Translator
 
 A wearable device that translates speech in real time. You wear it, someone speaks, and you hear the translation in your ear. The wearable captures and plays audio; a separate server does the heavy AI work (speech recognition, translation and speech synthesis).
 
