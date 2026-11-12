@@ -38,7 +38,7 @@ The following images show the working prototype, system monitoring interface, us
 
 The prototype used for the university project presentation, demonstrating audio capture, processing and audio output.
 
-![Wearable AI Audio Translator prototype](docs/Prototype.png)
+![Wearable AI Audio Translator prototype](docs/Prototype.jpeg)
 
 ### 2. System monitoring
 
