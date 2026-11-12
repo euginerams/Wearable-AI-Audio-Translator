@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wearable AI Audio Translator</title>
+<style>
+  :root { --bg:#f4f6f8; --card:#ffffff; --ink:#1f2933; --muted:#52606d; --line:#d9e0e6; --accent:#156082; --accent-ink:#ffffff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0e1621; --card:#17222f; --ink:#e6edf3; --muted:#9fb0c0; --line:#2a3a4b; --accent:#2aa0d6; --accent-ink:#06121c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: Calibri, "Segoe UI", system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:20px 28px; border-bottom:1px solid var(--line); background:var(--card); display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; }
+  h1 { font-size:22px; margin:0; }
+  .chips { display:flex; gap:10px; flex-wrap:wrap; }
+  .chip { padding:6px 14px; border-radius:999px; border:1px solid var(--line); font-size:14px; }
+  .chip b { margin-left:6px; }
+  main { max-width:1100px; margin:0 auto; padding:24px 28px 48px; display:grid; gap:20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:20px 24px; }
+  h2 { font-size:14px; margin:0 0 12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .langs { display:flex; gap:10px; flex-wrap:wrap; }
+  .langs button { font:inherit; font-size:16px; padding:10px 18px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); cursor:pointer; }
+  .langs button.on { background:var(--accent); color:var(--accent-ink); border-color:var(--accent); }
+  .latest { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:760px) { .latest { grid-template-columns:1fr; } }
+  .label { font-size:13px; color:var(--muted); margin-bottom:4px; }
+  .text { font-size:26px; line-height:1.3; min-height:2.6em; }
+  .scroll { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:15px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:13px; }
+  .note { color:var(--muted); font-size:13px; margin:12px 0 0; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Wearable AI Audio Translator</h1>
+  <div class="chips">
+    <div class="chip">Device<b id="device">waiting</b></div>
+    <div class="chip">Status<b id="status">&hellip;</b></div>
+  </div>
+</header>
+<main>
+  <section class="card">
+    <h2>Translate into</h2>
+    <div class="langs" id="langs"></div>
+  </section>
+  <section class="card">
+    <h2>Latest translation</h2>
+    <div class="latest">
+      <div><div class="label" id="fromLabel">Heard</div><div class="text" id="heard">&mdash;</div></div>
+      <div><div class="label" id="toLabel">Translation</div><div class="text" id="translated">&mdash;</div></div>
+    </div>
+  </section>
+  <section class="card">
+    <h2>Transcript and timings</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Time</th><th>Heard</th><th>Translation</th><th>Speech to text (s)</th><th>Translate (s)</th><th>Voice (s)</th><th>Total (s)</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let built = false;
+
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  }
+
+  async function setLanguage(code) {
+    await fetch("/api/language", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: code }),
+    });
+    refresh();
+  }
+
+  function render(s) {
+    $("device").textContent = s.device || "waiting";
+    $("status").textContent = s.status;
+
+    const box = $("langs");
+    if (!built) {
+      box.innerHTML = s.languages.map((l) => '<button data-code="' + l.code + '">' + l.name + "</button>").join("");
+      box.querySelectorAll("button").forEach((b) => { b.onclick = () => setLanguage(b.dataset.code); });
+      built = true;
+    }
+    box.querySelectorAll("button").forEach((b) => b.classList.toggle("on", b.dataset.code === s.target));
+
+    const h = s.history[0];
+    if (h) {
+      $("fromLabel").textContent = "Heard (" + h.from_name + ")";
+      $("toLabel").textContent = "Translation (" + h.to_name + ")";
+      $("heard").textContent = h.heard;
+      $("translated").textContent = h.translated;
+    }
+    $("rows").innerHTML = s.history.map((h) =>
+      "<tr><td>" + esc(h.time) + "</td><td>" + esc(h.heard) + "</td><td>" + esc(h.translated) + "</td><td>" +
+      h.stt_s + "</td><td>" + h.translate_s + "</td><td>" + h.tts_s + "</td><td><b>" + h.total_s + "</b></td></tr>"
+    ).join("");
+  }
+
+  async function refresh() {
+    try {
+      const r = await fetch("/api/state");
+      render(await r.json());
+    } catch (e) {
+      $("status").textContent = "dashboard cannot reach the server";
+    }
+  }
+
+  refresh();
+  setInterval(refresh, 700);
+</script>
+</body>
+</html>

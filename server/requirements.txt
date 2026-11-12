@@ -1,0 +1,11 @@
+numpy
+faster-whisper
+argostranslate
+piper-tts
+# Afrikaans: NLLB-200 translation and MMS-TTS voice
+ctranslate2
+transformers
+sentencepiece
+torch
+# only for record_test.py (records a test sentence from the PC microphone)
+sounddevice

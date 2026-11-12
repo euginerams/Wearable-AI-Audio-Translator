@@ -1,0 +1,21 @@
+idf_component_register(
+    SRCS
+        "main.c"
+        "audio_hal_i2s.c"
+        "dsp.c"
+        "vad.c"
+        "audio_buffer.c"
+        "net_stream.c"
+        "button.c"
+        "metrics.c"
+        "language.c"
+    INCLUDE_DIRS "."
+    REQUIRES
+        esp_wifi
+        esp_netif
+        nvs_flash
+        lwip
+        esp_timer
+        esp_driver_gpio
+        esp_driver_i2s
+)
